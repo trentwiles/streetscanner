@@ -11,18 +11,18 @@ BASE_HEADERS = {
 }
 
 def searchCity(q: str):
-	r = requests.get("https://web.peterpanbus.net/api/schedules/destinations", headers={"User-agent": ua.random})
-	if r.status_code != 200:
-		return {"error": True, "msg": f"got a non-200 from upstream (HTTP {str(r.status_code)}"}
+    r = requests.get("https://web.peterpanbus.net/api/schedules/destinations", headers={"User-agent": ua.random})
+    if r.status_code != 200:
+        return {"error": True, "msg": f"got a non-200 from upstream (HTTP {str(r.status_code)}"}
 
-	results = []
-	for stop in r.json():
-		if q in stop["stationName"]:
-			results.append({"name": stop["displayText"], "verbose_name": stop["stationName"], "pp_id": stop["stopUuid"]})
+    results = []
+    for stop in r.json():
+        if q in stop["stationName"]:
+            results.append({"name": stop["displayText"], "verbose_name": stop["stationName"], "pp_id": stop["stopUuid"]})
 
-	return results
+    return results
 
-def getTickets(fromUUID: str, toUUID: str, departDate: str):
+def search(fromUUID: str, toUUID: str, departDate: str):
     r = requests.post(
         f"{BASE_URL}/v3/schedule",
         headers={**BASE_HEADERS, "User-Agent": ua.random},
@@ -54,12 +54,28 @@ def getTickets(fromUUID: str, toUUID: str, departDate: str):
             return float("inf")
 
     products = r.json().get("scheduleProducts", [])
-    for trip in products:
-          departTime = trip['departTime']
-          arriveTime = trip['arriveTime']
-          travelDate = trip['travelDate']
-          travelTimeMinutes = trip['travelDuration']
-    return json.dumps(sorted(products, key=min_fare)[:5])
 
-result = getTickets("ff873135-3313-45f9-99fd-8f1c1be9a3a2", "31489613-da82-4b96-97c3-c75415f63ba0", "2026-05-01")
+    def extract_stops(segments):
+        if not segments:
+            return []
+        stops = [{"name": segments[0]["departStop"]["stationName"], "time": segments[0]["departTime"]}]
+        for seg in segments:
+            stops.append({"name": seg["arriveStop"]["stationName"], "time": seg["arriveTime"]})
+        return stops
+
+    cleaned = []
+    for trip in sorted(products, key=min_fare)[:5]:
+        run = trip.get("scheduleRun", {})
+        segments = trip.get("segments", [])
+        cleaned.append({
+            "price": min_fare(trip),
+            "depart_time": run.get("departTime"),
+            "arrive_time": run.get("arriveTime"),
+            "duration": run.get("travelDuration"),
+            "stops": extract_stops(segments),
+        })
+
+    return json.dumps(cleaned)
+
+result = search("ff873135-3313-45f9-99fd-8f1c1be9a3a2", "31489613-da82-4b96-97c3-c75415f63ba0", "2026-05-01")
 print(result)
