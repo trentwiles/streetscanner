@@ -14,3 +14,19 @@ Similar to Greyhound, PeterPan uses a UUID system. All stops and their respectiv
 ## Ourbus
 
 English plaintext city names are used (eg. New York, NY). Sourced from https://www.ourbus.com/stops
+
+# Database Plan
+
+Use a database that includes city names and their translations for each API. For instance:
+
+### Cities table
+---------------
+| City | `string` |
+| ID | `uuid` |
+---------------
+
+### Translations table
+-------------------------
+| Bus Company | `string` |
+| Identifier | `string` |
+| City | `FK` to cities.id |

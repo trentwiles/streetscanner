@@ -6,7 +6,39 @@ ua = UserAgent()
 BASE_URL = "https://www.coachrun.com/bus/search"
 
 # Cities available: see b_cities in /js/aff/bus_search_source1350154.js
-# e.g. "New York, NY", "Boston, MA", "Washington, DC", "Philadelphia, PA", etc.
+CITIES = [
+    "Binghamton, NY",
+    "Boston, MA",
+    "Buffalo, NY",
+    "Charlotte, NC",
+    "Christiansburg, VA",
+    "Colonial Heights, VA",
+    "Cookeville, TN",
+    "Dover, DE",
+    "Durham, NC",
+    "Fredericksburg, VA",
+    "Greensboro, NC",
+    "Hampton, VA",
+    "Harrisonburg, VA",
+    "Johnson City, TN",
+    "Knoxville, TN",
+    "Liverpool, NY",
+    "Millbury, MA",
+    "Baltimore, MD",
+    "Nashville, TN",
+    "New York, NY",
+    "Norfolk, VA",
+    "Philadelphia, PA",
+    "Raleigh, NC",
+    "Richmond, VA",
+    "Roanoke, VA",
+    "Rochester, NY",
+    "Salisbury, MD",
+    "Syracuse, NY",
+    "Virginia Beach, VA",
+    "Washington, DC",
+    "Worcester, MA",
+]
 
 def search(fromCity: str, toCity: str, departDate: str):
     r = requests.get(
