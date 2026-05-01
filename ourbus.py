@@ -57,12 +57,8 @@ def search(originCity: str, destCity: str, day: str):
 		headers={"User-agent": ua.random},
 		json={"date": day, "dest": destCity, "page": 1, "pass_count": 1, "route_type": "L", "size": 12, "sort_criteria": "pick_time", "src": originCity, "strategy": ["datebar"], "trip_type": "O"}
 	)
-	print(r.text)
-
-	# sort by price, get the cheapest 5
-
 	trips = []
-	for trip in r.json():
+	for trip in r.json().get("list", []):
 		trips.append({
 			"price": trip.get("pass_amount") + trip.get("booking_fee") + trip.get("facility_fee"),
 			"depart_time": trip.get("src_stop_eta"),
@@ -71,6 +67,7 @@ def search(originCity: str, destCity: str, day: str):
 			"stops": [],
 		})
 	trips.sort(key=lambda t: t["price"])
-	return trips
+	return trips[:5]
 
-search("New York, NY", "Boston, MA", "05/04/2026")
+if __name__ == "__main__":
+	search("New York, NY", "Boston, MA", "05/04/2026")

@@ -12,6 +12,7 @@ It might look something like this:
 | submit_user_agent | `string` |
 | originCity | `string` `FK` to `cities.city` |
 | destCity | `string` `FK` to `cities.city` |
+| days | `string` comma-separated day abbreviations e.g. `"Mon,Tue,Wed"` |
 -----------------
 
 A cronjob will iterate through all jobs in the DB at a given time and find the cheapest bus tickets in the next 4-8 weeks.

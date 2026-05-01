@@ -80,6 +80,7 @@ def search(fromCity: str, toCity: str, departDate: str):
     return trips[:5]
 
 
-result = search("New York, NY", "Boston, MA", "2026-05-01")
-for t in result:
-    print(t)
+if __name__ == "__main__":
+    result = search("New York, NY", "Boston, MA", "2026-05-01")
+    for t in result:
+        print(t)

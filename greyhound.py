@@ -66,4 +66,5 @@ def searchTrip(fromCity: str, toCity: str, depart: str):
 	return {"frontend_url": _generateFrontendSearchURL(fromCity, toCity, depart), "options": cheapest_trips[:5]}
 
 
-print(searchTrip("eeff627f-2fda-4e75-8468-783d47955b3a", "c0a47c54-53ea-46dc-984b-b764fc0b2fa9", "29.04.2026"))
+if __name__ == "__main__":
+	print(searchTrip("eeff627f-2fda-4e75-8468-783d47955b3a", "c0a47c54-53ea-46dc-984b-b764fc0b2fa9", "29.04.2026"))
