@@ -7,6 +7,7 @@ import peterpan
 import ourbus
 import coachrun
 import greyhound
+import cleaner
 
 DB_PATH = "streetscanner.db"
 
@@ -110,9 +111,11 @@ def fulfill_jobs():
 
         search_dates = dates_for_days(days_str)
 
+        date_results = {}
         for date in search_dates:
             print(f"\n  -- {date} --")
             results = search_all_companies(origin_row["id"], dest_row["id"], date)
+            date_results[date] = results
 
             for company, trips in results.items():
                 print(f"\n  [{company.upper()}]")
@@ -126,6 +129,18 @@ def fulfill_jobs():
                 else:
                     for trip in trips:
                         print(f"    {trip}")
+
+        sorted_trips, subject, html = cleaner.prepare_email(origin_name, dest_name, date_results)
+        print(f"\n  [CLEANER] {len(sorted_trips)} trips normalized")
+
+        now = datetime.utcnow().isoformat()
+        con.execute(
+            """INSERT INTO email_queue (request_id, email, subject, html_body, created_at)
+               VALUES (?, ?, ?, ?, ?)""",
+            (job["request_id"], job["email"], subject, html, now),
+        )
+        con.commit()
+        print(f"  [QUEUE]   queued email → {job['email']} | {subject}")
 
     con.close()
 

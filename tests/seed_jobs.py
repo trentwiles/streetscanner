@@ -35,6 +35,16 @@ def create_tables(con):
             destCity          TEXT NOT NULL REFERENCES cities(city),
             days              TEXT NOT NULL
         );
+
+        CREATE TABLE IF NOT EXISTS email_queue (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            request_id TEXT REFERENCES jobs(request_id),
+            email      TEXT NOT NULL,
+            subject    TEXT NOT NULL,
+            html_body  TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            sent_at    TEXT
+        );
     """)
 
 
