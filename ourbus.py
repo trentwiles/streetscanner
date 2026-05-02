@@ -57,6 +57,8 @@ def search(originCity: str, destCity: str, day: str):
 		headers={"User-agent": ua.random},
 		json={"date": day, "dest": destCity, "page": 1, "pass_count": 1, "route_type": "L", "size": 12, "sort_criteria": "pick_time", "src": originCity, "strategy": ["datebar"], "trip_type": "O"}
 	)
+	if r.status_code != 200:
+		return {"error": True, "msg": f"got a non-200 from upstream (HTTP {r.status_code})"}
 	trips = []
 	for trip in r.json().get("list", []):
 		trips.append({

@@ -14,6 +14,9 @@ Configuration (environment variables):
 
 import os
 import smtplib
+
+from dotenv import load_dotenv
+load_dotenv()
 import sqlite3
 from datetime import datetime, timezone
 from email.mime.multipart import MIMEMultipart

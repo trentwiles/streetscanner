@@ -45,6 +45,15 @@ def create_tables(con):
             created_at TEXT NOT NULL,
             sent_at    TEXT
         );
+
+        CREATE TABLE IF NOT EXISTS logs (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            created_at TEXT NOT NULL,
+            level      TEXT NOT NULL,
+            company    TEXT,
+            request_id TEXT REFERENCES jobs(request_id),
+            message    TEXT NOT NULL
+        );
     """)
 
 

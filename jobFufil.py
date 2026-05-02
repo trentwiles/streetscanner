@@ -27,6 +27,16 @@ def dates_for_days(days_str: str) -> list[str]:
     return dates
 
 
+def log(level: str, message: str, *, company: str = None, request_id: str = None) -> None:
+    con = sqlite3.connect(DB_PATH)
+    con.execute(
+        "INSERT INTO logs (created_at, level, company, request_id, message) VALUES (?, ?, ?, ?, ?)",
+        (datetime.utcnow().isoformat(), level, company, request_id, message),
+    )
+    con.commit()
+    con.close()
+
+
 def get_jobs():
     con = sqlite3.connect(DB_PATH)
     con.row_factory = sqlite3.Row
@@ -100,6 +110,7 @@ def fulfill_jobs():
 
         if not days_str:
             print("  [!] no days specified, skipping")
+            log("warning", "no days specified, skipping", request_id=job["request_id"])
             continue
 
         origin_row = con.execute("SELECT id FROM cities WHERE city = ?", (origin_name,)).fetchone()
@@ -107,6 +118,7 @@ def fulfill_jobs():
 
         if not origin_row or not dest_row:
             print("  [!] city not found in cities table, skipping")
+            log("error", f"city not found in cities table: '{origin_name}' or '{dest_name}'", request_id=job["request_id"])
             continue
 
         search_dates = dates_for_days(days_str)
@@ -124,6 +136,7 @@ def fulfill_jobs():
                 elif isinstance(trips, dict) and "error" in trips:
                     msg = trips.get("msg", trips["error"])
                     print(f"    error: {msg}")
+                    log("error", msg, company=company, request_id=job["request_id"])
                 elif not trips:
                     print("    no trips found")
                 else:
