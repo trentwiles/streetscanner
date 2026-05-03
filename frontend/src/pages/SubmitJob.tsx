@@ -28,18 +28,18 @@ export default function SubmitJob() {
 
   const mutation = useMutation({
     mutationFn: () =>
-      apiFetch<{ request_id: string }>('/api/jobs', {
+      apiFetch<{ pending: boolean }>('/api/jobs', {
         method: 'POST',
         body: JSON.stringify({ email, origin_city: origin, dest_city: dest, days }),
       }),
-    onSuccess: data => setSubmitted(data.request_id),
+    onSuccess: () => setSubmitted(email),
   })
 
   if (submitted) {
     return (
       <Container size="sm" pt={80}>
-        <Alert icon={<IconCheck />} color="green" title="Request submitted!" mb="md">
-          <Text>Your request ID is <strong>{submitted}</strong>. You'll receive an email when results are ready.</Text>
+        <Alert icon={<IconCheck />} color="green" title="Check your email!" mb="md">
+          <Text>We sent a confirmation link to <strong>{submitted}</strong>. Click the link to activate your price alerts.</Text>
         </Alert>
         <Button variant="default" onClick={() => setSubmitted(null)}>
           Submit another request
