@@ -1,6 +1,8 @@
 import sqlite3
 import json
 import sys
+import random
+import time
 from datetime import datetime, timedelta
 
 import peterpan
@@ -13,6 +15,9 @@ DB_PATH = "streetscanner.db"
 
 DAY_ABBREVS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 SEARCH_WEEKS_AHEAD = 4
+
+SLEEP_MIN = 10
+SLEEP_MAX = 30
 
 
 def dates_for_days(days_str: str) -> list[str]:
@@ -94,10 +99,17 @@ def fulfill_jobs():
         print("No jobs found in queue.")
         return
 
+    n = len(jobs)
+    est_min = n * SLEEP_MIN
+    est_max = n * SLEEP_MAX
+    estimate_msg = f"{n} job(s) queued; estimated runtime {est_min}s–{est_max}s (sleep {SLEEP_MIN}s–{SLEEP_MAX}s between jobs)"
+    print(estimate_msg)
+    log("info", estimate_msg)
+
     con = sqlite3.connect(DB_PATH)
     con.row_factory = sqlite3.Row
 
-    for job in jobs:
+    for i, job in enumerate(jobs):
         origin_name = job["originCity"]
         dest_name = job["destCity"]
         days_str = job.get("days", "")
@@ -154,6 +166,11 @@ def fulfill_jobs():
         )
         con.commit()
         print(f"  [QUEUE]   queued email → {job['email']} | {subject}")
+
+        if i < n - 1:
+            delay = random.randint(SLEEP_MIN, SLEEP_MAX)
+            print(f"  [SLEEP]   waiting {delay}s before next job...")
+            time.sleep(delay)
 
     con.close()
 
