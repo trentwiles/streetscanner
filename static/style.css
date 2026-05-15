@@ -541,6 +541,24 @@ input[type="email"].field-error {
   color: #fff;
 }
 
+.signout-btn {
+  display: inline-block;
+  padding: 7px 16px;
+  background: var(--error);
+  color: #fff;
+  border: 1px solid var(--error);
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.signout-btn:hover {
+  opacity: 0.85;
+}
+
 .leave-days-row {
   display: flex;
   flex-wrap: wrap;

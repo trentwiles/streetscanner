@@ -109,7 +109,7 @@
     <div id="message"></div>
   </div>
 
-  <div class="card manage-card">
+  <div class="card manage-card" id="manage-card">
     <a href="/login" class="manage-btn" id="manage-btn">Manage Subscriptions &amp; View Trips</a>
   </div>
 
@@ -412,6 +412,7 @@
 
         if (data.ok) {
           form.hidden = true;
+          document.getElementById('manage-card').hidden = true;
           msg.className = 'success';
           msg.textContent = "Almost there! Check your inbox for a confirmation link — be sure to check spam and mark us as safe.";
         } else {
