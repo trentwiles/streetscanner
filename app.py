@@ -206,10 +206,12 @@ def verify_magic_link():
     token = (request.values.get("token") or "").strip()
     if request.method == "GET":
         return render_template("confirm.html", token=token)
-    email = db.consume_magic_link(token)
+    email, request_id = db.consume_magic_link(token)
     if not email:
         return render_template("login.html", error="This link is invalid or has expired."), 400
     session["email"] = email
+    if not request_id:
+        return redirect(url_for("trips"))
     return render_template("verified.html")
 
 
@@ -217,7 +219,7 @@ def verify_magic_link():
 def trips():
     token = request.args.get("auth", "")
     if token:
-        verified_email = db.consume_magic_link(token)
+        verified_email, _ = db.consume_magic_link(token)
         if not verified_email:
             return render_template("login.html", error="This link is invalid or has expired."), 400
         session["email"] = verified_email

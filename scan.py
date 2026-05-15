@@ -289,9 +289,11 @@ def run():
                 log.exception("  ERROR scanning %s for request %s", carrier, request_id[:8])
 
         if all_trips:
-            inserted = save_trips(all_trips)
-            log.info("[%s] saved %d new trip(s) (%d dupes skipped)",
-                     request_id[:8], inserted, len(all_trips) - inserted)
+            all_trips.sort(key=lambda t: (t.get("price_cents") is None, t.get("price_cents")))
+            cheapest = all_trips[:5]
+            inserted = save_trips(cheapest)
+            log.info("[%s] saved %d new trip(s) (%d dupes skipped, %d dropped beyond top-5)",
+                     request_id[:8], inserted, len(cheapest) - inserted, len(all_trips) - len(cheapest))
 
     log.info("Scan complete")
 

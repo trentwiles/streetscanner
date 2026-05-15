@@ -362,26 +362,26 @@ def create_magic_link(email: str, request_id: str = None) -> str:
     return token
 
 
-def consume_magic_link(token: str) -> str | None:
-    """Validate a magic link token. Returns the email or None if invalid/expired.
-    Tokens remain valid for their full TTL (not single-use) so email link scanners
-    don't burn them before the user clicks. If the token is tied to a request_id,
-    that request is marked verified."""
+def consume_magic_link(token: str) -> tuple[str | None, str | None]:
+    """Validate a magic link token. Returns (email, request_id). Both None if
+    invalid/expired. Tokens remain valid for their full TTL (not single-use) so
+    email link scanners don't burn them before the user clicks. If the token is
+    tied to a request_id, that request is marked verified."""
     with get_conn() as conn:
         row = conn.execute(
             "SELECT email, expires_at, request_id FROM magic_links WHERE token = ?",
             (token,),
         ).fetchone()
         if not row:
-            return None
+            return None, None
         if datetime.fromisoformat(row["expires_at"]) <= datetime.now(timezone.utc):
-            return None
+            return None, None
         if row["request_id"]:
             conn.execute(
                 "UPDATE queue SET verified = 1 WHERE request_id = ?",
                 (row["request_id"],),
             )
-        return row["email"]
+        return row["email"], row["request_id"]
 
 
 if __name__ == "__main__":
