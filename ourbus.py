@@ -59,10 +59,23 @@ def search(originCity: str, destCity: str, day: str):
 	)
 	# sort by price, get the cheapest 5
 
+	data = r.json()
+	if isinstance(data, dict) and data.get("statusCode") != 200:
+		return {"error": True, "msg": data.get("msg", "unknown error")}
+
+	raw = data.get("list", []) if isinstance(data, dict) else data
+	if not isinstance(raw, list):
+		return {"error": True, "msg": f"unexpected response type: {type(raw)}"}
+
 	trips = []
-	for trip in r.json():
+	for trip in raw:
+		if not isinstance(trip, dict):
+			continue
+		pass_amount = trip.get("pass_amount") or 0
+		booking_fee = trip.get("booking_fee") or 0
+		facility_fee = trip.get("facility_fee") or 0
 		trips.append({
-			"price": trip.get("pass_amount") + trip.get("booking_fee") + trip.get("facility_fee"),
+			"price": pass_amount + booking_fee + facility_fee,
 			"depart_time": trip.get("src_stop_eta"),
 			"arrive_time": trip.get("dest_stop_eta"),
 			"duration": None,
