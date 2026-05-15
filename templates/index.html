@@ -110,8 +110,7 @@
   </div>
 
   <div class="card manage-card">
-    <button type="button" class="manage-btn" id="manage-btn">Manage Subscriptions &amp; View Trips</button>
-    <div id="manage-message"></div>
+    <a href="/login" class="manage-btn" id="manage-btn">Manage Subscriptions &amp; View Trips</a>
   </div>
 
   <script>
@@ -403,32 +402,6 @@
       } finally {
         btn.disabled = false;
         btn.textContent = 'Set up alert';
-      }
-    });
-    document.getElementById('manage-btn').addEventListener('click', async () => {
-      const email = prompt('Enter your email address to receive a login link:');
-      if (!email || !email.trim()) return;
-
-      const manageMsg = document.getElementById('manage-message');
-      const btn = document.getElementById('manage-btn');
-      btn.disabled = true;
-
-      try {
-        const res = await fetch('/auth/magic-link', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email.trim() }),
-        });
-        const data = await res.json();
-        manageMsg.className = data.ok ? 'success' : 'error';
-        manageMsg.textContent = data.ok
-          ? 'Check your inbox — we sent you a login link.'
-          : (data.error || 'Something went wrong.');
-      } catch {
-        manageMsg.className = 'error';
-        manageMsg.textContent = 'Network error — please try again.';
-      } finally {
-        btn.disabled = false;
       }
     });
   </script>

@@ -1,3 +1,4 @@
+import logging
 import os
 import smtplib
 from email.message import EmailMessage
@@ -11,6 +12,16 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, s
 import db
 
 load_dotenv()
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler("logs/app.log"),
+        logging.StreamHandler(),
+    ],
+)
+log = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", os.urandom(24))
@@ -52,7 +63,7 @@ def _smtp_send(to_email: str, subject: str, body: str):
     from_addr = os.environ.get("SMTP_FROM", smtp_user)
 
     if not smtp_host:
-        print(f"[email] to={to_email} subject={subject!r}\n{body}")
+        log.info("email (no SMTP configured) to=%s subject=%r", to_email, subject)
         return
 
     msg = EmailMessage()
@@ -61,11 +72,16 @@ def _smtp_send(to_email: str, subject: str, body: str):
     msg["To"] = to_email
     msg.set_content(body)
 
-    with smtplib.SMTP(smtp_host, smtp_port) as s:
-        if smtp_user:
-            s.starttls()
-            s.login(smtp_user, smtp_pass)
-        s.send_message(msg)
+    try:
+        with smtplib.SMTP(smtp_host, smtp_port) as s:
+            if smtp_user:
+                s.starttls()
+                s.login(smtp_user, smtp_pass)
+            s.send_message(msg)
+        log.info("email sent to=%s subject=%r", to_email, subject)
+    except Exception:
+        log.exception("email failed to=%s subject=%r", to_email, subject)
+        raise
 
 
 def _send_magic_link_email(to_email: str, link: str):
@@ -74,7 +90,7 @@ def _send_magic_link_email(to_email: str, link: str):
         "Your Street Scanner login link",
         f"Click the link below to sign in to Street Scanner.\n\n"
         f"{link}\n\n"
-        f"This link expires in {db.MAGIC_LINK_TTL_MINUTES} minutes and can only be used once.",
+        f"This link expires in {db.MAGIC_LINK_TTL_MINUTES} minutes.",
     )
 
 
@@ -86,7 +102,7 @@ def _send_verification_email(to_email: str, link: str):
         f"Click the link below to confirm your alert. Once confirmed, we'll start "
         f"scanning for trips and email you when we find something.\n\n"
         f"{link}\n\n"
-        f"This link expires in {db.MAGIC_LINK_TTL_MINUTES} minutes and can only be used once.\n\n"
+        f"This link expires in {db.MAGIC_LINK_TTL_MINUTES} minutes.\n\n"
         f"If you didn't request this, you can safely ignore this email.\n\n"
         f"(If this email landed in spam, please mark it as 'not spam' so future "
         f"trip alerts reach your inbox.)",

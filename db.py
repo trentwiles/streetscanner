@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 
 DB_PATH = "street_scanner.db"
 
-MAGIC_LINK_TTL_MINUTES = 15
+MAGIC_LINK_TTL_MINUTES = 60
 
 
 def get_conn():
@@ -363,20 +363,19 @@ def create_magic_link(email: str, request_id: str = None) -> str:
 
 
 def consume_magic_link(token: str) -> str | None:
-    """Validate and consume a magic link token. Returns the email or None if invalid/expired/used.
-    If the token is tied to a request_id, that request is marked verified."""
+    """Validate a magic link token. Returns the email or None if invalid/expired.
+    Tokens remain valid for their full TTL (not single-use) so email link scanners
+    don't burn them before the user clicks. If the token is tied to a request_id,
+    that request is marked verified."""
     with get_conn() as conn:
         row = conn.execute(
-            "SELECT email, expires_at, used, request_id FROM magic_links WHERE token = ?",
+            "SELECT email, expires_at, request_id FROM magic_links WHERE token = ?",
             (token,),
         ).fetchone()
         if not row:
             return None
-        if row["used"]:
-            return None
         if datetime.fromisoformat(row["expires_at"]) <= datetime.now(timezone.utc):
             return None
-        conn.execute("UPDATE magic_links SET used = 1 WHERE token = ?", (token,))
         if row["request_id"]:
             conn.execute(
                 "UPDATE queue SET verified = 1 WHERE request_id = ?",
