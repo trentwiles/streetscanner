@@ -246,7 +246,8 @@ def unsubscribe_all():
 @app.route("/me")
 @login_required
 def me():
-    return render_template("me.html", email=session["email"])
+    subscriptions = db.get_subscriptions_with_trips(session["email"])
+    return render_template("trips.html", email=session["email"], subscriptions=subscriptions)
 
 
 @app.route("/logout")
