@@ -216,6 +216,13 @@ def unsubscribe(request_id):
     return jsonify({"ok": True})
 
 
+@app.route("/unsubscribe-all", methods=["POST"])
+@login_required
+def unsubscribe_all():
+    count = db.deactivate_all_subscriptions(session["email"])
+    return jsonify({"ok": True, "deactivated": count})
+
+
 @app.route("/me")
 @login_required
 def me():

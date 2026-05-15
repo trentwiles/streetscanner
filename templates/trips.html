@@ -81,6 +81,10 @@
     </div>
     {% endfor %}
 
+    <div style="margin-top:16px;text-align:center">
+      <button id="unsubscribe-all-btn" class="unsubscribe-btn">Unsubscribe from all</button>
+    </div>
+
   {% else %}
     <div class="card" style="max-width:680px;text-align:center">
       <p class="no-subscriptions">
@@ -95,7 +99,7 @@
   </div>
 
   <script>
-    document.querySelectorAll('.unsubscribe-btn').forEach(btn => {
+    document.querySelectorAll('.unsubscribe-btn[data-id]').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (!confirm('Unsubscribe from this route? This cannot be undone.')) return;
 
@@ -122,6 +126,32 @@
         }
       });
     });
+
+    const allBtn = document.getElementById('unsubscribe-all-btn');
+    if (allBtn) {
+      allBtn.addEventListener('click', async () => {
+        if (!confirm('Unsubscribe from ALL routes? This cannot be undone.')) return;
+
+        allBtn.disabled = true;
+        allBtn.textContent = 'Unsubscribing…';
+
+        try {
+          const res = await fetch('/unsubscribe-all', { method: 'POST' });
+          const data = await res.json();
+          if (data.ok) {
+            location.reload();
+          } else {
+            alert(data.error || 'Something went wrong.');
+            allBtn.disabled = false;
+            allBtn.textContent = 'Unsubscribe from all';
+          }
+        } catch {
+          alert('Network error — please try again.');
+          allBtn.disabled = false;
+          allBtn.textContent = 'Unsubscribe from all';
+        }
+      });
+    }
   </script>
 </body>
 </html>

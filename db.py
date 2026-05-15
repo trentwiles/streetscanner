@@ -309,6 +309,15 @@ def deactivate_subscription(request_id: str, email: str) -> bool:
         return cur.rowcount > 0
 
 
+def deactivate_all_subscriptions(email: str) -> int:
+    with get_conn() as conn:
+        cur = conn.execute(
+            "UPDATE queue SET active = 0 WHERE email = ? AND active = 1",
+            (email,),
+        )
+        return cur.rowcount
+
+
 def mark_trips_notified(trip_ids: list[str]):
     now = datetime.now(timezone.utc).isoformat()
     with get_conn() as conn:
