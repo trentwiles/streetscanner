@@ -6,9 +6,9 @@ Gives a 5-second window to abort with Ctrl-C.
 import time
 import db
 
-TABLES = ["trips", "magic_links", "queue", "translations", "cities"]
+TABLES = ["trips", "magic_links", "queue"]
 
-print("WARNING: this will delete all rows from every table.")
+print("WARNING: this will delete all trips, magic links, and queued requests (cities and translations are preserved).")
 print("Press Ctrl-C within 5 seconds to abort.\n")
 
 for i in range(5, 0, -1):

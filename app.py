@@ -39,12 +39,10 @@ def fromjson_filter(s):
 def fmt_time_filter(iso_str):
     if not iso_str:
         return "—"
-    for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
-        try:
-            return datetime.strptime(iso_str, fmt).strftime("%-I:%M %p, %b %-d")
-        except ValueError:
-            pass
-    return iso_str
+    try:
+        return datetime.fromisoformat(iso_str).strftime("%-I:%M %p, %b %-d")
+    except (ValueError, TypeError):
+        return iso_str
 
 
 @app.template_filter("fmtprice")
