@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Confirm — Street Scanner</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header>
+    <h1>Street Scanner</h1>
+  </header>
+
+  <div class="card" style="max-width:400px;text-align:center">
+    <p style="font-size:1.1rem;font-weight:500">One more step</p>
+    <p style="color:var(--muted);margin-top:8px">Click the button below to confirm it's really you.</p>
+    <form method="POST" action="/auth/verify" style="margin-top:24px">
+      <input type="hidden" name="token" value="{{ token }}" />
+      <button type="submit" class="submit-btn">Confirm</button>
+    </form>
+  </div>
+</body>
+</html>

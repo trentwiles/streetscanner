@@ -3,7 +3,6 @@ import os
 import smtplib
 from email.message import EmailMessage
 from functools import wraps
-from urllib.parse import urlencode
 
 from datetime import datetime
 
@@ -190,18 +189,23 @@ def send_magic_link():
 
     token = db.create_magic_link(email)
     base_url = os.environ.get("BASE_URL", "").rstrip("/")
-    if base_url:
-        # TODO: replace placeholder with a unique string derived from the recipient
-        link = f"{base_url}/trips?{urlencode({'auth': token, 'email': 'PLACEHOLDER'})}"
-    else:
-        link = url_for("verify_magic_link", token=token, _external=True)
+    link = (
+        f"{base_url}/auth/verify?token={token}"
+        if base_url
+        else url_for("verify_magic_link", token=token, _external=True)
+    )
     _send_magic_link_email(email, link)
     return jsonify({"ok": True})
 
 
-@app.route("/auth/verify")
+@app.route("/auth/verify", methods=["GET", "POST"])
 def verify_magic_link():
-    token = request.args.get("token", "")
+    # GET shows a confirmation page only — consuming the token is deferred to
+    # POST so email scanners / link prefetchers can't auto-confirm on a user's
+    # behalf. The human clicks the button, which submits the form.
+    token = (request.values.get("token") or "").strip()
+    if request.method == "GET":
+        return render_template("confirm.html", token=token)
     email = db.consume_magic_link(token)
     if not email:
         return render_template("login.html", error="This link is invalid or has expired."), 400
