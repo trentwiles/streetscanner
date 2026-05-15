@@ -120,7 +120,7 @@ def login_required(f):
 @app.route("/")
 def index():
     cities = db.list_cities()
-    return render_template("index.html", cities=cities)
+    return render_template("index.html", cities=cities, email=session.get("email", ""))
 
 
 @app.route("/submit", methods=["POST"])

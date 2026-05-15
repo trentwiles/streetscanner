@@ -521,6 +521,26 @@ input[type="email"].field-error {
   cursor: not-allowed;
 }
 
+.add-trips-btn {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  background: transparent;
+  color: var(--accent, #2563eb);
+  border: 1px solid var(--accent, #2563eb);
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.add-trips-btn:hover {
+  background: var(--accent, #2563eb);
+  color: #fff;
+}
+
 .leave-days-row {
   display: flex;
   flex-wrap: wrap;
