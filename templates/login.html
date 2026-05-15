@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign in — Street Scanner</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header>
+    <h1>Street Scanner</h1>
+    <p>Enter your email to receive a sign-in link.</p>
+  </header>
+
+  <div class="card" style="max-width:400px">
+    {% if error %}
+    <div class="auth-error">{{ error }}</div>
+    {% endif %}
+
+    <form id="magic-form" novalidate>
+      <div class="form-section" style="margin-bottom:0;border:none;padding:0">
+        <label class="field-label" for="email">Email address</label>
+        <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email" />
+        <span class="field-error-msg" id="email-error" style="display:none"></span>
+      </div>
+      <button type="submit" class="submit-btn" style="margin-top:20px">Send sign-in link</button>
+      <div id="message"></div>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById('magic-form');
+    const emailInput = document.getElementById('email');
+    const emailError = document.getElementById('email-error');
+    const msg = document.getElementById('message');
+
+    emailInput.addEventListener('input', () => {
+      emailInput.classList.remove('field-error');
+      emailError.style.display = 'none';
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      msg.textContent = '';
+      msg.className = '';
+
+      const email = emailInput.value.trim();
+      if (!email) {
+        emailInput.classList.add('field-error');
+        emailError.textContent = 'Email is required.';
+        emailError.style.display = 'block';
+        return;
+      }
+
+      const btn = form.querySelector('.submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'Sending…';
+
+      try {
+        const res = await fetch('/auth/magic-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          form.hidden = true;
+          msg.className = 'success';
+          msg.textContent = 'Check your inbox — we sent you a sign-in link.';
+        } else {
+          msg.className = 'error';
+          msg.textContent = data.error || 'Something went wrong.';
+          btn.disabled = false;
+          btn.textContent = 'Send sign-in link';
+        }
+      } catch {
+        msg.className = 'error';
+        msg.textContent = 'Network error — please try again.';
+        btn.disabled = false;
+        btn.textContent = 'Send sign-in link';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Trips — Street Scanner</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header>
+    <h1>Street Scanner</h1>
+    <p>{{ email }}</p>
+  </header>
+
+  {% if subscriptions %}
+    {% for sub in subscriptions %}
+    {% set leave_days = sub.leave_days | fromjson %}
+    {% set return_days = sub.return_days | fromjson %}
+
+    <div class="card trips-card">
+      <div class="subscription-header">
+        <div>
+          <div class="section-label">Subscription</div>
+          <div class="route-title">{{ sub.origin_city }} → {{ sub.dest_city }}</div>
+        </div>
+        <button class="unsubscribe-btn" data-id="{{ sub.request_id }}">Unsubscribe</button>
+      </div>
+
+      <div class="form-section" style="margin-bottom:20px">
+        <div class="section-label">Leave days</div>
+        <div class="leave-days-row">
+          {% for day in leave_days %}
+          <span class="day-tag">{{ day }}</span>
+          {% endfor %}
+        </div>
+      </div>
+
+      {% if return_days %}
+      <div class="form-section" style="margin-bottom:20px">
+        <div class="section-label">Return days</div>
+        <div class="leave-days-row">
+          {% for day in return_days %}
+          <span class="day-tag">{{ day }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="form-section" style="margin-bottom:0;border-bottom:none;padding-bottom:0">
+        <div class="section-label">Trips found ({{ sub.trips | length }})</div>
+
+        {% if sub.trips %}
+          {% for trip in sub.trips %}
+          <div class="trip-row">
+            {% set badge = {
+              'coachrun': ('CR', '#e6f5ec', '#1a5c35'),
+              'greyhound': ('GH', '#ececec', '#333'),
+              'ourbus':    ('OB', '#e8f0fd', '#1a4f8a'),
+              'peterpan':  ('PP', '#fde8e8', '#a02020')
+            } %}
+            {% set b = badge.get(trip.carrier, ('??', '#eee', '#333')) %}
+            <span class="carrier-badge" style="background:{{ b[1] }};color:{{ b[2] }}">{{ b[0] }}</span>
+
+            <span class="trip-times">
+              {{ trip.departs_at | fmttime }}
+              <span class="arrow">→</span>
+              {{ trip.arrives_at | fmttime }}
+            </span>
+
+            <span class="trip-price">{{ trip.price_cents | fmtprice }}</span>
+
+            {% if trip.booking_url %}
+            <a class="trip-book" href="{{ trip.booking_url }}" target="_blank" rel="noopener">Book →</a>
+            {% endif %}
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="empty-trips">No trips found yet — we'll scan soon and email you when we do.</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+
+  {% else %}
+    <div class="card" style="max-width:680px;text-align:center">
+      <p class="no-subscriptions">
+        You don't have any active subscriptions.<br>
+        <a href="/">Set one up →</a>
+      </p>
+    </div>
+  {% endif %}
+
+  <div style="margin-top:12px;text-align:center">
+    <a href="/logout" style="font-size:0.8rem;color:var(--muted);text-decoration:none">Sign out</a>
+  </div>
+
+  <script>
+    document.querySelectorAll('.unsubscribe-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Unsubscribe from this route? This cannot be undone.')) return;
+
+        btn.disabled = true;
+        btn.textContent = 'Unsubscribing…';
+
+        try {
+          const res = await fetch(`/unsubscribe/${btn.dataset.id}`, { method: 'POST' });
+          const data = await res.json();
+          if (data.ok) {
+            btn.closest('.card').remove();
+            if (!document.querySelector('.trips-card')) {
+              location.reload();
+            }
+          } else {
+            alert(data.error || 'Something went wrong.');
+            btn.disabled = false;
+            btn.textContent = 'Unsubscribe';
+          }
+        } catch {
+          alert('Network error — please try again.');
+          btn.disabled = false;
+          btn.textContent = 'Unsubscribe';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

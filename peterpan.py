@@ -77,5 +77,6 @@ def search(fromUUID: str, toUUID: str, departDate: str):
 
     return json.dumps(cleaned)
 
-result = search("ff873135-3313-45f9-99fd-8f1c1be9a3a2", "31489613-da82-4b96-97c3-c75415f63ba0", "2026-05-01")
-print(result)
+if __name__ == "__main__":
+    result = search("ff873135-3313-45f9-99fd-8f1c1be9a3a2", "31489613-da82-4b96-97c3-c75415f63ba0", "2026-05-01")
+    print(result)

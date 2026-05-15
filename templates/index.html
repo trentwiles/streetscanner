@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Street Scanner — Bus Price Alerts</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header>
+    <h1>Street Scanner</h1>
+    <p>Get emailed when cheap bus tickets appear on your route.</p>
+  </header>
+
+  <div class="card">
+    <form id="alert-form" novalidate>
+
+      <!-- Email -->
+      <div class="form-section">
+        <div class="section-label">Your email</div>
+        <label class="field-label" for="email">Email address</label>
+        <input type="email" id="email" name="email" placeholder="you@example.com" required />
+      </div>
+
+      <!-- Route -->
+      <div class="form-section">
+        <div class="section-label">Route</div>
+        <div class="route-row">
+          <div>
+            <label class="field-label">From</label>
+            <div class="city-picker" id="origin-picker">
+              <div class="picker-trigger" tabindex="0" role="combobox" aria-haspopup="listbox" aria-expanded="false">
+                <span class="picker-placeholder">Select city…</span>
+              </div>
+              <div class="picker-dropdown" hidden>
+                <input class="picker-search" type="text" placeholder="Search…" autocomplete="off" />
+                <div class="picker-options" role="listbox"></div>
+                <div class="picker-empty" hidden>No cities found</div>
+              </div>
+              <input type="hidden" name="origin" id="origin" />
+            </div>
+          </div>
+          <div class="route-arrow">→</div>
+          <div>
+            <label class="field-label">To</label>
+            <div class="city-picker disabled" id="dest-picker">
+              <div class="picker-trigger" tabindex="0" role="combobox" aria-haspopup="listbox" aria-expanded="false">
+                <span class="picker-placeholder">Select origin first</span>
+              </div>
+              <div class="picker-dropdown" hidden>
+                <input class="picker-search" type="text" placeholder="Search…" autocomplete="off" />
+                <div class="picker-options" role="listbox"></div>
+                <div class="picker-empty" hidden>No cities found</div>
+              </div>
+              <input type="hidden" name="dest" id="dest" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Leave days -->
+      <div class="form-section">
+        <div class="section-label">Leave days</div>
+        <div class="day-grid" id="leave-days">
+          {% for day in ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] %}
+          <label class="day-btn">
+            <input type="checkbox" name="leave_days" value="{{ day }}" />
+            <span class="day-pill">{{ day }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Return days -->
+      <div class="form-section">
+        <div class="section-label">Return days <span style="font-weight:400;text-transform:none;font-size:0.8rem;color:var(--muted)">(optional)</span></div>
+        <div class="day-grid" id="return-days">
+          {% for day in ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] %}
+          <label class="day-btn">
+            <input type="checkbox" name="return_days" value="{{ day }}" />
+            <span class="day-pill">{{ day }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Time of day -->
+      <div class="form-section">
+        <div class="section-label">Time of day <span style="font-weight:400;text-transform:none;font-size:0.8rem;color:var(--muted)">(optional)</span></div>
+        <div class="time-grid">
+          <label class="time-btn">
+            <input type="checkbox" name="times" value="Morning" />
+            <span class="time-pill">🌅 Morning</span>
+          </label>
+          <label class="time-btn">
+            <input type="checkbox" name="times" value="Afternoon" />
+            <span class="time-pill">☀️ Afternoon</span>
+          </label>
+          <label class="time-btn">
+            <input type="checkbox" name="times" value="Night" />
+            <span class="time-pill">🌙 Night</span>
+          </label>
+        </div>
+        <p class="hint">Leave blank to see all departure times.</p>
+      </div>
+
+      <button type="submit" class="submit-btn">Set up alert</button>
+    </form>
+    <div id="message"></div>
+  </div>
+
+  <div class="card manage-card">
+    <button type="button" class="manage-btn" id="manage-btn">Manage Subscriptions &amp; View Trips</button>
+    <div id="manage-message"></div>
+  </div>
+
+  <script>
+    const CARRIER_META = {
+      greyhound: { label: 'GH', bg: '#ececec', color: '#333' },
+      peterpan:  { label: 'PP', bg: '#fde8e8', color: '#a02020' },
+      ourbus:    { label: 'OB', bg: '#e8f0fd', color: '#1a4f8a' },
+      coachrun:  { label: 'CR', bg: '#e6f5ec', color: '#1a5c35' },
+    };
+
+    const citiesData = {{ cities | tojson }};
+
+    function makeBadges(carriers) {
+      const wrap = document.createElement('span');
+      wrap.className = 'picker-badges';
+      for (const carrier of carriers) {
+        const meta = CARRIER_META[carrier];
+        if (!meta) continue;
+        const b = document.createElement('span');
+        b.className = 'carrier-badge';
+        b.textContent = meta.label;
+        b.style.background = meta.bg;
+        b.style.color = meta.color;
+        wrap.appendChild(b);
+      }
+      return wrap;
+    }
+
+    class CityPicker {
+      constructor(container, { placeholder = 'Select city…', onSelect } = {}) {
+        this.container = container;
+        this.trigger = container.querySelector('.picker-trigger');
+        this.dropdown = container.querySelector('.picker-dropdown');
+        this.search = container.querySelector('.picker-search');
+        this.optionsList = container.querySelector('.picker-options');
+        this.emptyMsg = container.querySelector('.picker-empty');
+        this.hiddenInput = container.querySelector('input[type="hidden"]');
+        this.placeholder = placeholder;
+        this.onSelect = onSelect;
+        this.value = '';
+        this.cities = [];
+        this._bindEvents();
+      }
+
+      setCities(cities) {
+        this.cities = cities;
+        this._render();
+        const hasOptions = cities.length > 0;
+        this.container.classList.toggle('disabled', !hasOptions);
+        if (!hasOptions) {
+          this.trigger.innerHTML = '';
+          this.trigger.appendChild(Object.assign(document.createElement('span'), {
+            className: 'picker-placeholder',
+            textContent: 'Select origin first',
+          }));
+          this.hiddenInput.value = '';
+          this.value = '';
+        }
+      }
+
+      reset(newPlaceholder) {
+        this.value = '';
+        this.hiddenInput.value = '';
+        this.trigger.innerHTML = '';
+        this.trigger.appendChild(Object.assign(document.createElement('span'), {
+          className: 'picker-placeholder',
+          textContent: newPlaceholder || this.placeholder,
+        }));
+        if (this.search) this.search.value = '';
+        this._render();
+      }
+
+      _render() {
+        const q = (this.search?.value || '').toLowerCase();
+        const visible = q
+          ? this.cities.filter(c => c.name.toLowerCase().includes(q))
+          : this.cities;
+
+        this.optionsList.innerHTML = '';
+        this.emptyMsg.hidden = visible.length > 0;
+
+        for (const city of visible) {
+          const item = document.createElement('div');
+          item.className = 'picker-option';
+          if (city.name === this.value) item.classList.add('selected');
+          item.dataset.value = city.name;
+
+          const nameSpan = document.createElement('span');
+          nameSpan.className = 'picker-option-name';
+          nameSpan.textContent = city.name;
+          item.appendChild(nameSpan);
+
+          if (city.carriers.length > 0) item.appendChild(makeBadges(city.carriers));
+
+          item.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            this._select(city);
+          });
+          this.optionsList.appendChild(item);
+        }
+      }
+
+      _select(city) {
+        this.value = city.name;
+        this.hiddenInput.value = city.name;
+
+        this.trigger.innerHTML = '';
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'picker-selected-name';
+        nameSpan.textContent = city.name;
+        this.trigger.appendChild(nameSpan);
+        if (city.carriers.length > 0) this.trigger.appendChild(makeBadges(city.carriers));
+
+        this._close();
+        if (this.onSelect) this.onSelect(city);
+      }
+
+      _open() {
+        if (this.container.classList.contains('disabled')) return;
+        this.dropdown.hidden = false;
+        this.trigger.setAttribute('aria-expanded', 'true');
+        this.container.classList.add('open');
+        this.search?.focus();
+      }
+
+      _close() {
+        this.dropdown.hidden = true;
+        this.trigger.setAttribute('aria-expanded', 'false');
+        this.container.classList.remove('open');
+        if (this.search) this.search.value = '';
+        this._render();
+      }
+
+      _bindEvents() {
+        this.trigger.addEventListener('click', () => {
+          this.dropdown.hidden ? this._open() : this._close();
+        });
+
+        this.trigger.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            this.dropdown.hidden ? this._open() : this._close();
+          }
+          if (e.key === 'Escape') this._close();
+        });
+
+        this.search?.addEventListener('input', () => this._render());
+
+        document.addEventListener('click', (e) => {
+          if (!this.container.contains(e.target)) this._close();
+        });
+      }
+    }
+
+    const originPicker = new CityPicker(
+      document.getElementById('origin-picker'),
+      {
+        placeholder: 'Select city…',
+        onSelect(city) {
+          setPickerError('origin-picker', '');
+          const originCarriers = new Set(city.carriers);
+          const compatible = citiesData.filter(c =>
+            c.name !== city.name &&
+            c.carriers.some(carrier => originCarriers.has(carrier))
+          );
+          destPicker.reset('Select city…');
+          destPicker.setCities(compatible);
+        },
+      }
+    );
+
+    const destPicker = new CityPicker(
+      document.getElementById('dest-picker'),
+      {
+        placeholder: 'Select origin first',
+        onSelect() { setPickerError('dest-picker', ''); },
+      }
+    );
+
+    originPicker.setCities(citiesData);
+
+    document.getElementById('email').addEventListener('input', () => setFieldError('email', ''));
+    document.getElementById('leave-days').addEventListener('change', () => setGroupError('leave-days', ''));
+
+    // Form submission
+    const form = document.getElementById('alert-form');
+    const msg  = document.getElementById('message');
+
+    function setFieldError(fieldId, message) {
+      const field = document.getElementById(fieldId);
+      field.classList.toggle('field-error', !!message);
+      let hint = field.parentElement.querySelector('.field-error-msg');
+      if (message) {
+        if (!hint) {
+          hint = document.createElement('span');
+          hint.className = 'field-error-msg';
+          field.insertAdjacentElement('afterend', hint);
+        }
+        hint.textContent = message;
+      } else if (hint) {
+        hint.remove();
+      }
+    }
+
+    function setPickerError(pickerId, message) {
+      const picker = document.getElementById(pickerId);
+      picker.classList.toggle('field-error', !!message);
+      let hint = picker.parentElement.querySelector('.field-error-msg');
+      if (message) {
+        if (!hint) {
+          hint = document.createElement('span');
+          hint.className = 'field-error-msg';
+          picker.insertAdjacentElement('afterend', hint);
+        }
+        hint.textContent = message;
+      } else if (hint) {
+        hint.remove();
+      }
+    }
+
+    function setGroupError(groupId, message) {
+      const group = document.getElementById(groupId);
+      let hint = group.parentElement.querySelector('.field-error-msg');
+      if (message) {
+        group.classList.add('field-error');
+        if (!hint) {
+          hint = document.createElement('span');
+          hint.className = 'field-error-msg';
+          group.insertAdjacentElement('afterend', hint);
+        }
+        hint.textContent = message;
+      } else {
+        group.classList.remove('field-error');
+        if (hint) hint.remove();
+      }
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      msg.textContent = '';
+      msg.className = '';
+
+      const email  = document.getElementById('email').value.trim();
+      const origin = document.getElementById('origin').value;
+      const dest   = document.getElementById('dest').value;
+
+      const checked = (name) =>
+        [...form.querySelectorAll(`input[name="${name}"]:checked`)].map(el => el.value);
+
+      const leave_days  = checked('leave_days');
+      const return_days = checked('return_days');
+      const times       = checked('times');
+
+      // Client-side validation
+      let valid = true;
+      setFieldError('email', email ? '' : 'Email is required.');
+      if (!email) valid = false;
+      setPickerError('origin-picker', origin ? '' : 'Please select an origin city.');
+      if (!origin) valid = false;
+      setPickerError('dest-picker', dest ? '' : 'Please select a destination city.');
+      if (!dest) valid = false;
+      setGroupError('leave-days', leave_days.length ? '' : 'Select at least one leave day.');
+      if (!leave_days.length) valid = false;
+      if (!valid) return;
+
+      const btn = form.querySelector('.submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'Submitting…';
+
+      try {
+        const res = await fetch('/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, origin, dest, leave_days, return_days, times }),
+        });
+        const data = await res.json();
+
+        if (data.ok) {
+          form.hidden = true;
+          msg.className = 'success';
+          msg.textContent = "Almost there! Check your inbox for a confirmation link — be sure to check spam and mark us as safe.";
+        } else {
+          msg.className = 'error';
+          msg.textContent = data.error || 'Something went wrong.';
+        }
+      } catch {
+        msg.className = 'error';
+        msg.textContent = 'Network error — please try again.';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Set up alert';
+      }
+    });
+    document.getElementById('manage-btn').addEventListener('click', async () => {
+      const email = prompt('Enter your email address to receive a login link:');
+      if (!email || !email.trim()) return;
+
+      const manageMsg = document.getElementById('manage-message');
+      const btn = document.getElementById('manage-btn');
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/auth/magic-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.trim() }),
+        });
+        const data = await res.json();
+        manageMsg.className = data.ok ? 'success' : 'error';
+        manageMsg.textContent = data.ok
+          ? 'Check your inbox — we sent you a login link.'
+          : (data.error || 'Something went wrong.');
+      } catch {
+        manageMsg.className = 'error';
+        manageMsg.textContent = 'Network error — please try again.';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

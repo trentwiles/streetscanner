@@ -6,7 +6,7 @@ STOPS = [
 	"Albany, NY", "Binghamton, NY", "Brockport, NY", "Buffalo, NY", "Cortland, NY",
 	"Geneva, NY", "Hamilton, NY", "Ithaca, NY", "Morrisville, NY", "Niagara Falls, NY",
 	"Oswego, NY", "Rochester, NY", "Syracuse, NY", "Syracuse Airport, NY", "Utica, NY",
-	"Whitney Point, NY", "JFK Airport, NY", "La Guardia Airport, NY",
+	"New York, NY", "Whitney Point, NY", "JFK Airport, NY", "La Guardia Airport, NY",
 	"Resorts World Catskills - Monticello, NY",
 	"Allentown - Wescosville, PA", "Bethlehem, PA", "Douglassville, PA", "Easton, PA",
 	"Hellertown, PA", "Kutztown, PA", "Lancaster, PA", "Malvern, PA", "Mount Pocono, PA",
@@ -57,8 +57,6 @@ def search(originCity: str, destCity: str, day: str):
 		headers={"User-agent": ua.random},
 		json={"date": day, "dest": destCity, "page": 1, "pass_count": 1, "route_type": "L", "size": 12, "sort_criteria": "pick_time", "src": originCity, "strategy": ["datebar"], "trip_type": "O"}
 	)
-	print(r.text)
-
 	# sort by price, get the cheapest 5
 
 	trips = []
@@ -73,4 +71,5 @@ def search(originCity: str, destCity: str, day: str):
 	trips.sort(key=lambda t: t["price"])
 	return trips
 
-search("New York, NY", "Boston, MA", "05/04/2026")
+if __name__ == "__main__":
+    search("New York, NY", "Boston, MA", "05/04/2026")

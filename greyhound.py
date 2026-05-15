@@ -19,8 +19,6 @@ def searchCity(q: str):
 		f"{BASE_URL}/autocomplete/cities?q={q}&lang=en_US&country=us&flixbus_cities_only=false&is_train_only=false&stations=false&&popular_stations_count=null&disabled_countries=AU",
 		headers={"User-agent": ua.random}
 	)
-	print(r.json())
-
 	if r.status_code != 200:
 		return {'error': True, 'msg': f'got a non-200 from upstream (HTTP {str(r.status_code)}'}
 
@@ -66,4 +64,5 @@ def searchTrip(fromCity: str, toCity: str, depart: str):
 	return {"frontend_url": _generateFrontendSearchURL(fromCity, toCity, depart), "options": cheapest_trips[:5]}
 
 
-print(searchTrip("eeff627f-2fda-4e75-8468-783d47955b3a", "c0a47c54-53ea-46dc-984b-b764fc0b2fa9", "29.04.2026"))
+if __name__ == "__main__":
+    print(searchTrip("eeff627f-2fda-4e75-8468-783d47955b3a", "c0a47c54-53ea-46dc-984b-b764fc0b2fa9", "29.04.2026"))
