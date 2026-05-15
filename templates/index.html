@@ -40,7 +40,7 @@
               <input type="hidden" name="origin" id="origin" />
             </div>
           </div>
-          <div class="route-arrow">→</div>
+          <button type="button" class="route-flip" id="flip-cities" title="Swap origin and destination" aria-label="Swap origin and destination" disabled>⇄</button>
           <div>
             <label class="field-label">To</label>
             <div class="city-picker disabled" id="dest-picker">
@@ -265,6 +265,12 @@
       }
     }
 
+    const flipBtn = document.getElementById('flip-cities');
+
+    function updateFlipState() {
+      flipBtn.disabled = !(originPicker.value && destPicker.value);
+    }
+
     const originPicker = new CityPicker(
       document.getElementById('origin-picker'),
       {
@@ -278,6 +284,7 @@
           );
           destPicker.reset('Select city…');
           destPicker.setCities(compatible);
+          updateFlipState();
         },
       }
     );
@@ -286,11 +293,26 @@
       document.getElementById('dest-picker'),
       {
         placeholder: 'Select origin first',
-        onSelect() { setPickerError('dest-picker', ''); },
+        onSelect() {
+          setPickerError('dest-picker', '');
+          updateFlipState();
+        },
       }
     );
 
     originPicker.setCities(citiesData);
+
+    flipBtn.addEventListener('click', () => {
+      const originName = originPicker.value;
+      const destName = destPicker.value;
+      if (!originName || !destName) return;
+      const newOrigin = citiesData.find(c => c.name === destName);
+      const newDest = citiesData.find(c => c.name === originName);
+      if (!newOrigin || !newDest) return;
+      originPicker._select(newOrigin);
+      destPicker._select(newDest);
+      updateFlipState();
+    });
 
     document.getElementById('email').addEventListener('input', () => setFieldError('email', ''));
     document.getElementById('leave-days').addEventListener('change', () => setGroupError('leave-days', ''));

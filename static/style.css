@@ -114,6 +114,35 @@ select:focus {
   user-select: none;
 }
 
+.route-flip {
+  margin-bottom: 4px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border, #ddd);
+  background: #fff;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.route-flip:hover:not(:disabled) {
+  background: var(--accent, #2563eb);
+  border-color: var(--accent, #2563eb);
+  color: #fff;
+  transform: rotate(180deg);
+}
+
+.route-flip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .day-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
